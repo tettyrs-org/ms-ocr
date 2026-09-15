@@ -4,7 +4,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Optional;
 
 import org.tettyrs.msocr.correction.DigitRepair;
@@ -18,19 +18,25 @@ public final class NipType {
     public static FieldResult correct(String raw, LocalDate today){
         String compact = raw.replaceAll("\\s+", "");
         if (isDigits(compact)){
-            return hasValidStructure(compact, today)
-                    ? FieldResult.accepted(compact)
-                    : FieldResult.flagged(compact, 0.50, Violation.NIP_FORMAT_TIDAK_VALID);
+            if (hasValidStructure(compact, today)) {
+                return new FieldResult(compact, 1.0, "rule", raw, null, 0, null, List.of());
+            } else {
+                return new FieldResult(compact, 0.50, "rule", raw, null, 0, null,
+                    List.of(new Violation("nip_format_tidak_valid", List.of("nip"), "error", "Format NIP tidak valid")));
+            }
         }
         Optional<DigitRepair.Result> repaired = DigitRepair.repair(compact, 2, "");
         if (repaired.isEmpty()) {
-            return  FieldResult.flagged(compact, 0.50, Violation.NIP_FORMAT_TIDAK_VALID);
+            return new FieldResult(compact, 0.50, "rule", raw, null, 0, null,
+                List.of(new Violation("nip_format_tidak_valid", List.of("nip"), "error", "Format NIP tidak valid")));
         }
         String candidate = repaired.get().value();
-        return hasValidStructure(candidate, today)
-                ? FieldResult.corrected(candidate, Correction.CONFUSION_MAP, 0.70)
-                : FieldResult.flagged(compact, 0.30, Violation.NIP_FORMAT_TIDAK_VALID);
-
+        if (hasValidStructure(candidate, today)) {
+            return new FieldResult(candidate, 0.70, "rule", raw, "confusion_map", 0, null, List.of());
+        } else {
+            return new FieldResult(compact, 0.30, "rule", raw, null, 0, null,
+                List.of(new Violation("nip_format_tidak_valid", List.of("nip"), "error", "Format NIP tidak valid")));
+        }
     }
 
     static boolean hasValidStructure(String nip, LocalDate today){
