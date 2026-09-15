@@ -14,44 +14,44 @@ class NipTypeTest {
 
    @Test
     void acceptsValidNip(){
-       assertEquals(FieldResult.accepted("198503122010011004"),
+       assertEquals(new FieldResult("198503122010011004", 1.0, "rule", "198503122010011004", null, 0, null, List.of()),
                NipType.correct("198503122010011004", TODAY));
    }
 
    @Test
     void removeSpacesBetweenGroups(){
-       assertEquals(FieldResult.accepted("198503122010011004"),
+       assertEquals(new FieldResult("198503122010011004", 1.0, "rule", "1985 0312 201001 1 004", null, 0, null, List.of()),
                NipType.correct("1985 0312 201001 1 004", TODAY));
    }
 
     @Test
     void repairsLookalikeCharacters(){
         assertEquals(
-                new FieldResult("198503122010011004", Correction.CONFUSION_MAP, 0.70, List.of()),
+                new FieldResult("198503122010011004", 0.70, "rule", "1985O3122O10011004", "confusion_map", 0, null, List.of()),
                 NipType.correct("1985O3122O10011004", TODAY));
     }
 
     @Test
     void keepsOriginalWhenRepairBreaksStructure() {
         assertEquals(
-                new FieldResult("19851312201001l004", Correction.NONE, 0.30,
-                        List.of(Violation.NIP_FORMAT_TIDAK_VALID)),
+                new FieldResult("19851312201001l004", 0.30, "rule", "19851312201001l004", null, 0, null,
+                        List.of(new Violation("nip_format_tidak_valid", List.of("nip"), "error", "Format NIP tidak valid"))),
                 NipType.correct("19851312201001l004", TODAY));
     }
 
    @Test
     void refusesRepairBeyondSubtitutions(){
        assertEquals(
-               new FieldResult("1985O3122O10011O4X", Correction.NONE, 0.50,
-                       List.of(Violation.NIP_FORMAT_TIDAK_VALID)),
+               new FieldResult("1985O3122O10011O4X", 0.50, "rule", "1985O3122O10011O4X", null, 0, null,
+                       List.of(new Violation("nip_format_tidak_valid", List.of("nip"), "error", "Format NIP tidak valid"))),
                NipType.correct("1985O3122O10011O4X", TODAY));
    }
 
     @Test
     void flagsInvalidStructureWithoutRepair(){
         assertEquals(
-                new FieldResult("198513122010011004", Correction.NONE, 0.50,
-                        List.of(Violation.NIP_FORMAT_TIDAK_VALID)),
+                new FieldResult("198513122010011004", 0.50, "rule", "198513122010011004", null, 0, null,
+                        List.of(new Violation("nip_format_tidak_valid", List.of("nip"), "error", "Format NIP tidak valid"))),
                 NipType.correct("198513122010011004", TODAY));
     }
 
