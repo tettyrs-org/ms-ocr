@@ -1,72 +1,93 @@
 package org.tettyrs.msocr.correction.fieldtype;
 
+import org.tettyrs.msocr.correction.DigitRepair;
+import org.tettyrs.msocr.correction.LexiconMatcher;
+
+import java.time.DateTimeException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class DateType {
 
-    private static final Map<String, Integer> MONTHS = Map.ofEntries(
-            Map.entry("januari", 1), Map.entry("februari", 2), Map.entry("maret", 3),
-            Map.entry("april", 4), Map.entry("mei", 5), Map.entry("juni", 6),
-            Map.entry("juli", 7), Map.entry("agustus", 8), Map.entry("september", 9),
-            Map.entry("oktober", 10), Map.entry("november", 11), Map.entry("desember", 12),
-            Map.entry("jan", 1), Map.entry("feb", 2), Map.entry("mar", 3),
-            Map.entry("apr", 4), Map.entry("jun", 6), Map.entry("agu", 8),
-            Map.entry("agt", 8), Map.entry("ags", 8), Map.entry("sep", 9),
-            Map.entry("sept", 9), Map.entry("okt", 10), Map.entry("nov", 11), Map.entry("des", 12));
+    private static final Map<String, Integer> MONTHS = new LinkedHashMap<>();
+    private static final LexiconMatcher MONTH_NAMES;
+    private static final Pattern TEXT_FORM = Pattern.compile("^(\\S+)\\s+([A-Za-z0-9]+)\\s+(\\S+)$");
+    private static final Pattern NUMERIC_FORM = Pattern.compile("^(\\S+)([-/])(\\d{1,2})\\2(\\S+)$");
 
-    private DateType() {
+    static  {
+        String[] names = { "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
+        for (int i = 0; i < names.length; i++) {
+            MONTHS.put(names[i], i+1);
+        }
+        MONTHS.putAll(Map.of("Jan", 1, "Feb", 2, "Mar", 3, "Apr", 4, "Jun", 6,
+                "Jul", 7, "Agu", 8, "Agt", 8, "Ags", 8, "Sep", 9));
+        MONTHS.putAll(Map.of("Sept", 9, "Okt", 10, "Nov", 11, "Des", 12));
+        MONTH_NAMES = new LexiconMatcher(MONTHS.keySet());
     }
 
-    public static FieldResult correct(String raw) {
-        String normalized = raw.trim();
+    private DateType(){
+    }
 
-        Pattern textPattern = Pattern.compile("^(\\d{1,2})\\s+([a-zA-Z]+)\\s+(\\d{4})$");
-        Matcher textFormat = textPattern.matcher(normalized);
-        if (textFormat.find()) {
-            return parseTextFormat(textFormat.group(1), textFormat.group(2), textFormat.group(3), raw);
+    private static boolean isAmbiguous(boolean numeric, int day, int month){
+        return numeric && day <= 12 && month <= 12 && day != month;
+    }
+
+    private static FieldResult unreadable(String raw){
+        return  new FieldResult(raw, 0.30, "rule", raw, null, 0, null, List.of());
+    }
+
+    private static FieldResult build(String raw, String dayText, int month, String yearText,
+                                     boolean monthCorrected, boolean numeric){
+        Optional<DigitRepair.Result> day = DigitRepair.repair(dayText, 1, "");
+        Optional<DigitRepair.Result> year = DigitRepair.repair(yearText, 1, "");
+        if (day.isEmpty() || year.isEmpty()
+                || day.get().value().length() > 2 || year.get().value().length() != 4) {
+            return unreadable(raw);
         }
 
-        Pattern numericPattern = Pattern.compile("^(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})$");
-        Matcher numericFormat = numericPattern.matcher(normalized);
-        if (numericFormat.find()) {
-            return parseNumericFormat(numericFormat.group(1), numericFormat.group(2), numericFormat.group(3), raw);
-        }
-
-        return new FieldResult(null, 0.30, "rule", raw, null, 0, null, java.util.List.of());
-    }
-
-    private static FieldResult parseTextFormat(String dayStr, String monthStr, String yearStr, String raw) {
-        String monthLower = monthStr.toLowerCase();
-        if (!MONTHS.containsKey(monthLower)) {
-            return new FieldResult(null, 0.30, "rule", raw, null, 0, null, java.util.List.of());
-        }
-
-        int monthNum = MONTHS.get(monthLower);
-        return parseAndValidate(dayStr, String.valueOf(monthNum), yearStr, raw,
-                monthLower.equals(monthStr) ? null : "lexicon");
-    }
-
-    private static FieldResult parseNumericFormat(String dayStr, String monthStr, String yearStr, String raw) {
-        return parseAndValidate(dayStr, monthStr, yearStr, raw, null);
-    }
-
-    private static FieldResult parseAndValidate(String dayStr, String monthStr, String yearStr, String raw, String correction) {
+        LocalDate date;
         try {
-            int day = Integer.parseInt(dayStr);
-            int month = Integer.parseInt(monthStr);
-            int year = Integer.parseInt(yearStr);
-
-            LocalDate date = LocalDate.of(year, month, day);
-            String result = date.format(DateTimeFormatter.ISO_DATE);
-
-            double confidence = correction != null ? 0.70 : 1.0;
-            return new FieldResult(result, confidence, "rule", raw, correction, 0, null, java.util.List.of());
-        } catch (Exception e) {
-            return new FieldResult(null, 0.30, "rule", raw, null, 0, null, java.util.List.of());
+            date = LocalDate.of(Integer.parseInt(year.get().value()), month,
+                    Integer.parseInt((day.get().value())));
+        } catch (DateTimeException e){
+            return unreadable(raw);
         }
+
+        boolean repaired = day.get().substitutions() + year.get().substitutions() > 0;
+        String correction = monthCorrected ? "lexicon" : repaired ? "confusion_map"  : null;
+        double confidence = correction == null ? 1.0 : 0.70;
+        List<Violation> violations = isAmbiguous(numeric, date.getDayOfMonth(), month)
+                ? List.of(new Violation("tanggal_ambigu", List.of("tanggal"),
+                "warning", "Bentuk tanggal dapat dibaca terbalik"))
+                : List.of();
+        return new FieldResult(date.toString(), confidence, "rule", raw, correction, 0, null, violations);
+    }
+
+    public static FieldResult correct(String raw){
+        String text = raw.trim();
+
+        Matcher textForm = TEXT_FORM.matcher(text);
+        if (textForm.matches()) {
+            Optional<LexiconMatcher.Match> month = MONTH_NAMES.match(textForm.group(2));
+            if (month.isEmpty()) {
+                return unreadable(raw);
+            }
+            return build(raw, textForm.group(1), MONTHS.get(month.get().entry()),
+                    textForm.group(3), month.get().distance() >0, false);
+        }
+
+        Matcher numericForm = NUMERIC_FORM.matcher(text);
+        if (numericForm.matches()) {
+            return build(raw, numericForm.group(1), Integer.parseInt(numericForm.group(3)),
+                    numericForm.group(4), false, true );
+        }
+
+        return unreadable(raw);
     }
 }
