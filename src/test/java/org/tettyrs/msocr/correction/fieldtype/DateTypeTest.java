@@ -82,4 +82,5 @@ class DateTypeTest {
     void refuseUnknownForm(){
         assertEquals(0.30, DateType.correct("kemarin").confidence());
     }
+
 }
