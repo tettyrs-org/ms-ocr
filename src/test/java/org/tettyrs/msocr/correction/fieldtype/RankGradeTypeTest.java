@@ -54,4 +54,21 @@ class RankGradeTypeTest {
         assertEquals("Pnt Md", result.value());
         assertEquals(0.30, result.confidence());
     }
+
+    @Test
+    void derivesFromIncompleteRankWithMisreadGrade(){
+        FieldResult result = RankGradeType.correct("Penata / III-€");
+        assertEquals("Penata (III/c)", result.value());
+        assertEquals("derived", result.correction());
+        assertEquals(0.60, result.confidence());
+    }
+
+    @Test
+    void flagsConflictingRankGolonganWithoutOverwriting(){
+        FieldResult result = RankGradeType.correct("Penata Muda Tingkat I / III-d");
+        assertEquals("Penata Muda Tingkat I (III/d)", result.value());
+        assertNull(result.correction());
+        assertEquals(0.50, result.confidence());
+        assertEquals("pangkat_golongan_tidak_cocok", result.violations().get(0).rule());
+    }
 }
