@@ -1,0 +1,18 @@
+quarkus:
+  http:
+    port: 8080
+    host: 0.0.0.0
+
+  smallrye-health:
+    root-path: /q/health
+    liveness-path: /live
+    readiness-path: /ready
+
+  log:
+    level: INFO
+    category:
+      "org.tettyrs": DEBUG
+
+  rest-client:
+    connect-timeout: 5000
+    read-timeout: 30000

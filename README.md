@@ -67,9 +67,45 @@ src/
 
 ### Docker Setup
 
+Run as part of the full OCR stack from project root:
+
 ```bash
-docker-compose up -d
+cd /path/to/Projects/OCR
+
+# Start complete microservices stack
+docker-compose --env-file .env up -d
+
+# Or run standalone with Docker
+docker build -t ms-ocr:latest ./ms-ocr
+docker run -p 8080:8080 \
+  -e OCR_ENGINE_URL=http://ocr-engine:8000 \
+  -e LOG_LEVEL=INFO \
+  ms-ocr:latest
 ```
+
+### Service Integration
+
+When using docker-compose, the service is automatically available:
+
+```bash
+# From other containers (e.g., ocr-api)
+curl http://ms-ocr:8080/q/health/live
+
+# From host machine
+curl http://localhost:8080/q/health/live
+```
+
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `QUARKUS_HTTP_HOST` | Bind address | 0.0.0.0 |
+| `QUARKUS_HTTP_PORT` | Bind port | 8080 |
+| `OCR_ENGINE_URL` | OCR Engine endpoint | http://ocr-engine:8000 |
+| `LOG_LEVEL` | Logging level | INFO |
+| `CORRECTOR_VERSION` | Service version | 1.0 |
+
+All variables are configured in root `.env` file for docker-compose deployments.
 
 ## Usage Example
 
