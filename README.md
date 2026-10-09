@@ -157,7 +157,6 @@ Part of the Tettyrs OCR ecosystem.
 ## Related Projects
 
 - [ocr-engine](https://github.com/tettyrs-org/ocr-engine) - Python OCR extraction service
-- [whatsapp-blast](https://github.com/tettyrs-org/whatsapp-blast) - WhatsApp message distribution
 
 ## Support
 
