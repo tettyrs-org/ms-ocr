@@ -157,6 +157,7 @@ Part of the Tettyrs OCR ecosystem.
 ## Related Projects
 
 - [ocr-engine](https://github.com/tettyrs-org/ocr-engine) - Python OCR extraction service
+- [ocr-api](https://github.com/tettyrs-org/ocr-api) - Public API and document lifecycle
 
 ## Support
 
