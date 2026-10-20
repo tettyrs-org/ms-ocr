@@ -1,0 +1,735 @@
+{
+  "dummy": true,
+  "seed": 20260910,
+  "dokumen": [
+    {
+      "id": "GD-01",
+      "file": "GD-01_st_scan_bersih.png",
+      "kategori": "Scan bersih (baseline)",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Scan bersih, 2 pegawai",
+      "ev_terkait": "EV-01",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "090/ST/IX/2026",
+        "tanggal_surat": "2026-09-01",
+        "dasar_penugasan": "Surat Undangan Nomor UND-45/PB.1/2026 tanggal 1 September 2026 perihal Rapat Koordinasi.",
+        "pemberi_tugas": {
+          "nama": "Dr. Ahmad Hidayat, M.M.",
+          "jabatan": "Pejabat Pembuat Komitmen"
+        },
+        "pegawai": [
+          {
+            "nama": "Budi Santoso",
+            "nip": "198503122010011004",
+            "pangkat_golongan": "Penata Muda Tingkat I (III/b)",
+            "jabatan": "Analis Perbendaharaan"
+          },
+          {
+            "nama": "Siti Rahayu",
+            "nip": "199007152015022003",
+            "pangkat_golongan": "Penata (III/c)",
+            "jabatan": "Pelaksana Verifikasi"
+          }
+        ],
+        "uraian_tugas": "Rapat Koordinasi Penyusunan Laporan Keuangan",
+        "tempat_tujuan": "SURABAYA",
+        "tanggal_mulai": "2026-09-15",
+        "tanggal_selesai": "2026-09-18",
+        "sumber_biaya": "DIPA Ditjen Perbendaharaan TA 2026"
+      }
+    },
+    {
+      "id": "GD-02",
+      "file": "GD-02_spd_scan_bersih.png",
+      "kategori": "Scan bersih (baseline)",
+      "jenis_dokumen": "SPD",
+      "kondisi": "Scan bersih, 1 pegawai",
+      "ev_terkait": "EV-01",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "091/SPD/IX/2026",
+        "tanggal_spd": "2026-09-10",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Rina Lestari",
+            "nip": "198612032011012006",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Bendahara Pengeluaran",
+            "tingkat_biaya_perjalanan": "C"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Monitoring Pelaksanaan Anggaran Daerah",
+        "alat_angkut": "Kendaraan Dinas",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "BANDUNG",
+        "tanggal_berangkat": "2026-09-14",
+        "tanggal_harus_kembali": "2026-09-16",
+        "lama_perjalanan_hari": 3,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524111"
+        },
+        "keterangan": null
+      }
+    },
+    {
+      "id": "GD-03",
+      "file": "GD-03_spd_scan_bersih.pdf",
+      "kategori": "Scan bersih (baseline)",
+      "jenis_dokumen": "SPD",
+      "kondisi": "PDF hasil scan, tanpa text layer, 1 pegawai",
+      "ev_terkait": "EV-01",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "092/SPD/X/2026",
+        "tanggal_spd": "2026-10-01",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Dedi Kurniawan",
+            "nip": "198004252005011008",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Staf Akuntansi",
+            "tingkat_biaya_perjalanan": "D"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Pendampingan Rekonsiliasi Bank",
+        "alat_angkut": "Kereta Api",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "YOGYAKARTA",
+        "tanggal_berangkat": "2026-10-05",
+        "tanggal_harus_kembali": "2026-10-06",
+        "lama_perjalanan_hari": 2,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524119"
+        },
+        "keterangan": null
+      }
+    },
+    {
+      "id": "GD-04",
+      "file": "GD-04_st_foto_miring.jpg",
+      "kategori": "Foto HP miring / perspektif",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Foto dengan perspektif menyudut",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "090/ST/IX/2026",
+        "tanggal_surat": "2026-09-01",
+        "dasar_penugasan": "Surat Undangan Nomor UND-45/PB.1/2026 tanggal 1 September 2026 perihal Rapat Koordinasi.",
+        "pemberi_tugas": {
+          "nama": "Dr. Ahmad Hidayat, M.M.",
+          "jabatan": "Pejabat Pembuat Komitmen"
+        },
+        "pegawai": [
+          {
+            "nama": "Budi Santoso",
+            "nip": "198503122010011004",
+            "pangkat_golongan": "Penata Muda Tingkat I (III/b)",
+            "jabatan": "Analis Perbendaharaan"
+          },
+          {
+            "nama": "Siti Rahayu",
+            "nip": "199007152015022003",
+            "pangkat_golongan": "Penata (III/c)",
+            "jabatan": "Pelaksana Verifikasi"
+          }
+        ],
+        "uraian_tugas": "Rapat Koordinasi Penyusunan Laporan Keuangan",
+        "tempat_tujuan": "SURABAYA",
+        "tanggal_mulai": "2026-09-15",
+        "tanggal_selesai": "2026-09-18",
+        "sumber_biaya": "DIPA Ditjen Perbendaharaan TA 2026"
+      }
+    },
+    {
+      "id": "GD-05",
+      "file": "GD-05_spd_foto_miring.jpg",
+      "kategori": "Foto HP miring / perspektif",
+      "jenis_dokumen": "SPD",
+      "kondisi": "Foto dengan perspektif menyudut",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "092/SPD/X/2026",
+        "tanggal_spd": "2026-10-01",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Dedi Kurniawan",
+            "nip": "198004252005011008",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Staf Akuntansi",
+            "tingkat_biaya_perjalanan": "D"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Pendampingan Rekonsiliasi Bank",
+        "alat_angkut": "Kereta Api",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "YOGYAKARTA",
+        "tanggal_berangkat": "2026-10-05",
+        "tanggal_harus_kembali": "2026-10-06",
+        "lama_perjalanan_hari": 2,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524119"
+        },
+        "keterangan": null
+      }
+    },
+    {
+      "id": "GD-06",
+      "file": "GD-06_st_rotasi.png",
+      "kategori": "Foto HP miring / perspektif",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Halaman diputar 8 derajat, 3 pegawai",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "101/ST/X/2026",
+        "tanggal_surat": "2026-10-02",
+        "dasar_penugasan": "Nota Dinas Nomor ND-77/KU.1/2026 tanggal 30 September 2026.",
+        "pemberi_tugas": {
+          "nama": "Drs. Rudi Hartono",
+          "jabatan": "Kepala Bagian Umum"
+        },
+        "pegawai": [
+          {
+            "nama": "Agus Wijaya",
+            "nip": "198209202008011005",
+            "pangkat_golongan": "Pengatur Tingkat I (II/d)",
+            "jabatan": "Operator Data"
+          },
+          {
+            "nama": "Maya Sari",
+            "nip": "199402112018022004",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Analis Anggaran"
+          },
+          {
+            "nama": "Yoga Pratama",
+            "nip": "199111052014031007",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Teknisi Komputer"
+          }
+        ],
+        "uraian_tugas": "Pendampingan Audit Internal",
+        "tempat_tujuan": "MEDAN",
+        "tanggal_mulai": "2026-10-12",
+        "tanggal_selesai": "2026-10-14",
+        "sumber_biaya": "DIPA Sekretariat Jenderal TA 2026"
+      }
+    },
+    {
+      "id": "GD-07",
+      "file": "GD-07_st_bayangan.jpg",
+      "kategori": "Bayangan / pencahayaan tidak rata",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Bayangan kuat dari kiri dan pita gelap",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "090/ST/IX/2026",
+        "tanggal_surat": "2026-09-01",
+        "dasar_penugasan": "Surat Undangan Nomor UND-45/PB.1/2026 tanggal 1 September 2026 perihal Rapat Koordinasi.",
+        "pemberi_tugas": {
+          "nama": "Dr. Ahmad Hidayat, M.M.",
+          "jabatan": "Pejabat Pembuat Komitmen"
+        },
+        "pegawai": [
+          {
+            "nama": "Budi Santoso",
+            "nip": "198503122010011004",
+            "pangkat_golongan": "Penata Muda Tingkat I (III/b)",
+            "jabatan": "Analis Perbendaharaan"
+          },
+          {
+            "nama": "Siti Rahayu",
+            "nip": "199007152015022003",
+            "pangkat_golongan": "Penata (III/c)",
+            "jabatan": "Pelaksana Verifikasi"
+          }
+        ],
+        "uraian_tugas": "Rapat Koordinasi Penyusunan Laporan Keuangan",
+        "tempat_tujuan": "SURABAYA",
+        "tanggal_mulai": "2026-09-15",
+        "tanggal_selesai": "2026-09-18",
+        "sumber_biaya": "DIPA Ditjen Perbendaharaan TA 2026"
+      }
+    },
+    {
+      "id": "GD-08",
+      "file": "GD-08_spd_bayangan.jpg",
+      "kategori": "Bayangan / pencahayaan tidak rata",
+      "jenis_dokumen": "SPD",
+      "kondisi": "Bayangan kuat dari kiri dan pita gelap",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "091/SPD/IX/2026",
+        "tanggal_spd": "2026-09-10",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Rina Lestari",
+            "nip": "198612032011012006",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Bendahara Pengeluaran",
+            "tingkat_biaya_perjalanan": "C"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Monitoring Pelaksanaan Anggaran Daerah",
+        "alat_angkut": "Kendaraan Dinas",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "BANDUNG",
+        "tanggal_berangkat": "2026-09-14",
+        "tanggal_harus_kembali": "2026-09-16",
+        "lama_perjalanan_hari": 3,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524111"
+        },
+        "keterangan": null
+      }
+    },
+    {
+      "id": "GD-09",
+      "file": "GD-09_st_foto_sulit.jpg",
+      "kategori": "Bayangan / pencahayaan tidak rata",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Foto perspektif berat, bayangan, kompresi JPEG kuat",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "101/ST/X/2026",
+        "tanggal_surat": "2026-10-02",
+        "dasar_penugasan": "Nota Dinas Nomor ND-77/KU.1/2026 tanggal 30 September 2026.",
+        "pemberi_tugas": {
+          "nama": "Drs. Rudi Hartono",
+          "jabatan": "Kepala Bagian Umum"
+        },
+        "pegawai": [
+          {
+            "nama": "Agus Wijaya",
+            "nip": "198209202008011005",
+            "pangkat_golongan": "Pengatur Tingkat I (II/d)",
+            "jabatan": "Operator Data"
+          },
+          {
+            "nama": "Maya Sari",
+            "nip": "199402112018022004",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Analis Anggaran"
+          },
+          {
+            "nama": "Yoga Pratama",
+            "nip": "199111052014031007",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Teknisi Komputer"
+          }
+        ],
+        "uraian_tugas": "Pendampingan Audit Internal",
+        "tempat_tujuan": "MEDAN",
+        "tanggal_mulai": "2026-10-12",
+        "tanggal_selesai": "2026-10-14",
+        "sumber_biaya": "DIPA Sekretariat Jenderal TA 2026"
+      }
+    },
+    {
+      "id": "GD-10",
+      "file": "GD-10_st_kusut.jpg",
+      "kategori": "Dokumen kusut atau terlipat",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Kusut sedang",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "090/ST/IX/2026",
+        "tanggal_surat": "2026-09-01",
+        "dasar_penugasan": "Surat Undangan Nomor UND-45/PB.1/2026 tanggal 1 September 2026 perihal Rapat Koordinasi.",
+        "pemberi_tugas": {
+          "nama": "Dr. Ahmad Hidayat, M.M.",
+          "jabatan": "Pejabat Pembuat Komitmen"
+        },
+        "pegawai": [
+          {
+            "nama": "Budi Santoso",
+            "nip": "198503122010011004",
+            "pangkat_golongan": "Penata Muda Tingkat I (III/b)",
+            "jabatan": "Analis Perbendaharaan"
+          },
+          {
+            "nama": "Siti Rahayu",
+            "nip": "199007152015022003",
+            "pangkat_golongan": "Penata (III/c)",
+            "jabatan": "Pelaksana Verifikasi"
+          }
+        ],
+        "uraian_tugas": "Rapat Koordinasi Penyusunan Laporan Keuangan",
+        "tempat_tujuan": "SURABAYA",
+        "tanggal_mulai": "2026-09-15",
+        "tanggal_selesai": "2026-09-18",
+        "sumber_biaya": "DIPA Ditjen Perbendaharaan TA 2026"
+      }
+    },
+    {
+      "id": "GD-11",
+      "file": "GD-11_spd_kusut_berat.jpg",
+      "kategori": "Dokumen kusut atau terlipat",
+      "jenis_dokumen": "SPD",
+      "kondisi": "Kusut berat",
+      "ev_terkait": "EV-02",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "092/SPD/X/2026",
+        "tanggal_spd": "2026-10-01",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Dedi Kurniawan",
+            "nip": "198004252005011008",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Staf Akuntansi",
+            "tingkat_biaya_perjalanan": "D"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Pendampingan Rekonsiliasi Bank",
+        "alat_angkut": "Kereta Api",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "YOGYAKARTA",
+        "tanggal_berangkat": "2026-10-05",
+        "tanggal_harus_kembali": "2026-10-06",
+        "lama_perjalanan_hari": 2,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524119"
+        },
+        "keterangan": null
+      }
+    },
+    {
+      "id": "GD-12",
+      "file": "GD-12_st_stempel.png",
+      "kategori": "Stempel atau tanda tangan menimpa teks",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Stempel menutupi nomor surat",
+      "ev_terkait": "EV-05",
+      "harus_ditandai": [
+        "nomor_surat"
+      ],
+      "nilai": {
+        "nomor_surat": "090/ST/IX/2026",
+        "tanggal_surat": "2026-09-01",
+        "dasar_penugasan": "Surat Undangan Nomor UND-45/PB.1/2026 tanggal 1 September 2026 perihal Rapat Koordinasi.",
+        "pemberi_tugas": {
+          "nama": "Dr. Ahmad Hidayat, M.M.",
+          "jabatan": "Pejabat Pembuat Komitmen"
+        },
+        "pegawai": [
+          {
+            "nama": "Budi Santoso",
+            "nip": "198503122010011004",
+            "pangkat_golongan": "Penata Muda Tingkat I (III/b)",
+            "jabatan": "Analis Perbendaharaan"
+          },
+          {
+            "nama": "Siti Rahayu",
+            "nip": "199007152015022003",
+            "pangkat_golongan": "Penata (III/c)",
+            "jabatan": "Pelaksana Verifikasi"
+          }
+        ],
+        "uraian_tugas": "Rapat Koordinasi Penyusunan Laporan Keuangan",
+        "tempat_tujuan": "SURABAYA",
+        "tanggal_mulai": "2026-09-15",
+        "tanggal_selesai": "2026-09-18",
+        "sumber_biaya": "DIPA Ditjen Perbendaharaan TA 2026"
+      }
+    },
+    {
+      "id": "GD-13",
+      "file": "GD-13_spd_stempel_nip.png",
+      "kategori": "Stempel atau tanda tangan menimpa teks",
+      "jenis_dokumen": "SPD",
+      "kondisi": "Stempel menutupi NIP pelaksana",
+      "ev_terkait": "EV-05",
+      "harus_ditandai": [
+        "pegawai[0].nip"
+      ],
+      "nilai": {
+        "nomor_spd": "091/SPD/IX/2026",
+        "tanggal_spd": "2026-09-10",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Rina Lestari",
+            "nip": "198612032011012006",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Bendahara Pengeluaran",
+            "tingkat_biaya_perjalanan": "C"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Monitoring Pelaksanaan Anggaran Daerah",
+        "alat_angkut": "Kendaraan Dinas",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "BANDUNG",
+        "tanggal_berangkat": "2026-09-14",
+        "tanggal_harus_kembali": "2026-09-16",
+        "lama_perjalanan_hari": 3,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524111"
+        },
+        "keterangan": null
+      }
+    },
+    {
+      "id": "GD-14",
+      "file": "GD-14_st_ttd_pemberi.png",
+      "kategori": "Stempel atau tanda tangan menimpa teks",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Tanda tangan menimpa nama pemberi tugas",
+      "ev_terkait": "EV-05",
+      "harus_ditandai": [
+        "pemberi_tugas.nama"
+      ],
+      "nilai": {
+        "nomor_surat": "101/ST/X/2026",
+        "tanggal_surat": "2026-10-02",
+        "dasar_penugasan": "Nota Dinas Nomor ND-77/KU.1/2026 tanggal 30 September 2026.",
+        "pemberi_tugas": {
+          "nama": "Drs. Rudi Hartono",
+          "jabatan": "Kepala Bagian Umum"
+        },
+        "pegawai": [
+          {
+            "nama": "Agus Wijaya",
+            "nip": "198209202008011005",
+            "pangkat_golongan": "Pengatur Tingkat I (II/d)",
+            "jabatan": "Operator Data"
+          },
+          {
+            "nama": "Maya Sari",
+            "nip": "199402112018022004",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Analis Anggaran"
+          },
+          {
+            "nama": "Yoga Pratama",
+            "nip": "199111052014031007",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Teknisi Komputer"
+          }
+        ],
+        "uraian_tugas": "Pendampingan Audit Internal",
+        "tempat_tujuan": "MEDAN",
+        "tanggal_mulai": "2026-10-12",
+        "tanggal_selesai": "2026-10-14",
+        "sumber_biaya": "DIPA Sekretariat Jenderal TA 2026"
+      }
+    },
+    {
+      "id": "GD-15",
+      "file": "GD-15_st_2_pegawai.pdf",
+      "kategori": "Surat Tugas dengan beberapa pegawai",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "PDF scan, 2 pegawai",
+      "ev_terkait": "EV-03",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "090/ST/IX/2026",
+        "tanggal_surat": "2026-09-01",
+        "dasar_penugasan": "Surat Undangan Nomor UND-45/PB.1/2026 tanggal 1 September 2026 perihal Rapat Koordinasi.",
+        "pemberi_tugas": {
+          "nama": "Dr. Ahmad Hidayat, M.M.",
+          "jabatan": "Pejabat Pembuat Komitmen"
+        },
+        "pegawai": [
+          {
+            "nama": "Budi Santoso",
+            "nip": "198503122010011004",
+            "pangkat_golongan": "Penata Muda Tingkat I (III/b)",
+            "jabatan": "Analis Perbendaharaan"
+          },
+          {
+            "nama": "Siti Rahayu",
+            "nip": "199007152015022003",
+            "pangkat_golongan": "Penata (III/c)",
+            "jabatan": "Pelaksana Verifikasi"
+          }
+        ],
+        "uraian_tugas": "Rapat Koordinasi Penyusunan Laporan Keuangan",
+        "tempat_tujuan": "SURABAYA",
+        "tanggal_mulai": "2026-09-15",
+        "tanggal_selesai": "2026-09-18",
+        "sumber_biaya": "DIPA Ditjen Perbendaharaan TA 2026"
+      }
+    },
+    {
+      "id": "GD-16",
+      "file": "GD-16_st_3_pegawai.png",
+      "kategori": "Surat Tugas dengan beberapa pegawai",
+      "jenis_dokumen": "SURAT_TUGAS",
+      "kondisi": "Scan bersih, 3 pegawai",
+      "ev_terkait": "EV-03",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_surat": "101/ST/X/2026",
+        "tanggal_surat": "2026-10-02",
+        "dasar_penugasan": "Nota Dinas Nomor ND-77/KU.1/2026 tanggal 30 September 2026.",
+        "pemberi_tugas": {
+          "nama": "Drs. Rudi Hartono",
+          "jabatan": "Kepala Bagian Umum"
+        },
+        "pegawai": [
+          {
+            "nama": "Agus Wijaya",
+            "nip": "198209202008011005",
+            "pangkat_golongan": "Pengatur Tingkat I (II/d)",
+            "jabatan": "Operator Data"
+          },
+          {
+            "nama": "Maya Sari",
+            "nip": "199402112018022004",
+            "pangkat_golongan": "Penata Muda (III/a)",
+            "jabatan": "Analis Anggaran"
+          },
+          {
+            "nama": "Yoga Pratama",
+            "nip": "199111052014031007",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Teknisi Komputer"
+          }
+        ],
+        "uraian_tugas": "Pendampingan Audit Internal",
+        "tempat_tujuan": "MEDAN",
+        "tanggal_mulai": "2026-10-12",
+        "tanggal_selesai": "2026-10-14",
+        "sumber_biaya": "DIPA Sekretariat Jenderal TA 2026"
+      }
+    },
+    {
+      "id": "GD-17",
+      "file": "GD-17_spd_2_halaman.pdf",
+      "kategori": "SPD multi-halaman / PDF",
+      "jenis_dokumen": "SPD",
+      "kondisi": "PDF 2 halaman, pengikut dan keterangan di halaman 2",
+      "ev_terkait": "EV-01",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "113/SPD/XI/2026",
+        "tanggal_spd": "2026-11-01",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Yoga Pratama",
+            "nip": "199111052014031007",
+            "pangkat_golongan": "Pengatur (II/c)",
+            "jabatan": "Teknisi Komputer",
+            "tingkat_biaya_perjalanan": "D"
+          }
+        ],
+        "pengikut": [
+          {
+            "nama": "Maya Sari",
+            "nip": "199402112018022004"
+          }
+        ],
+        "maksud_perjalanan": "Instalasi Sistem Informasi Keuangan",
+        "alat_angkut": "Pesawat Udara",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "MAKASSAR",
+        "tanggal_berangkat": "2026-11-02",
+        "tanggal_harus_kembali": "2026-11-04",
+        "lama_perjalanan_hari": 3,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524115"
+        },
+        "keterangan": "Tiket pulang-pergi ditanggung instansi"
+      }
+    },
+    {
+      "id": "GD-18",
+      "file": "GD-18_spd_2_halaman.pdf",
+      "kategori": "SPD multi-halaman / PDF",
+      "jenis_dokumen": "SPD",
+      "kondisi": "PDF 2 halaman, keterangan di halaman 2",
+      "ev_terkait": "EV-01",
+      "harus_ditandai": [],
+      "nilai": {
+        "nomor_spd": "114/SPD/XI/2026",
+        "tanggal_spd": "2026-11-03",
+        "pejabat_pembuat_komitmen": {
+          "nama": "Dr. Ahmad Hidayat, M.M."
+        },
+        "pegawai": [
+          {
+            "nama": "Agus Wijaya",
+            "nip": "198209202008011005",
+            "pangkat_golongan": "Pengatur Tingkat I (II/d)",
+            "jabatan": "Operator Data",
+            "tingkat_biaya_perjalanan": "C"
+          }
+        ],
+        "pengikut": [],
+        "maksud_perjalanan": "Verifikasi Lapangan Aset",
+        "alat_angkut": "Kendaraan Dinas",
+        "tempat_kedudukan": "JAKARTA",
+        "tempat_tujuan": "SEMARANG",
+        "tanggal_berangkat": "2026-11-09",
+        "tanggal_harus_kembali": "2026-11-10",
+        "lama_perjalanan_hari": 2,
+        "pembebanan_anggaran": {
+          "instansi": "Kementerian Keuangan",
+          "akun": "524111"
+        },
+        "keterangan": "Perjalanan dinas dengan kendaraan dinas"
+      }
+    },
+    {
+      "id": "GD-19",
+      "file": "GD-19_struk_belanja.png",
+      "kategori": "Bukan dokumen perjalanan dinas (uji penolakan)",
+      "jenis_dokumen": "UNKNOWN",
+      "kondisi": "Struk belanja",
+      "ev_terkait": "EV-07",
+      "harus_ditandai": [],
+      "nilai": {}
+    },
+    {
+      "id": "GD-20",
+      "file": "GD-20_surat_umum.png",
+      "kategori": "Bukan dokumen perjalanan dinas (uji penolakan)",
+      "jenis_dokumen": "UNKNOWN",
+      "kondisi": "Surat pemberitahuan libur, bukan perjalanan dinas",
+      "ev_terkait": "EV-07",
+      "harus_ditandai": [],
+      "nilai": {}
+    }
+  ]
+}

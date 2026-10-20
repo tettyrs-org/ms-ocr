@@ -11,8 +11,25 @@ quarkus:
   log:
     level: INFO
     category:
-      "org.tettyrs": DEBUG
+      "org.tettyrs":
+        level: DEBUG
 
   rest-client:
     connect-timeout: 5000
     read-timeout: 30000
+
+  redis:
+    hosts: redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+
+# Alamat antar-service (docker network). Lihat api-spec bagian 8.
+ocr:
+  engine:
+    url: ${OCR_ENGINE_URL:http://ocr-engine:8000}
+  api:
+    url: ${API_INTERNAL_URL:http://ocr-api:8080}
+  # Nama tetap agar pesan pending tetap bisa dibaca setelah container dibuat ulang (HOSTNAME berubah).
+  consumer-name: ${OCR_CONSUMER_NAME:ms-ocr-1}
+
+internal:
+  token: ${INTERNAL_TOKEN:}

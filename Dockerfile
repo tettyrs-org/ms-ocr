@@ -14,17 +14,20 @@ RUN sed -i 's/\r$//' ./mvnw && chmod +x ./mvnw && ./mvnw clean package -DskipTes
 # Runtime stage
 FROM eclipse-temurin:17-jre-jammy
 
+RUN groupadd -r app && useradd -r -g app app && mkdir -p /app/logs && chown app:app /app/logs
+
 WORKDIR /app
 
 # Copy entire Quarkus app (includes JAR + lib + app directories)
 COPY --from=builder /app/target/quarkus-app/ ./
 
 # Expose port (Quarkus default)
+USER app
+
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD java -cp app.jar org.tettyrs.msocr.health.HealthCheck || exit 1
+# Tanpa HEALTHCHECK: ms-ocr tidak punya endpoint HTTP yang dipakai pemeriksaan, dan percobaan
+# sebelumnya memanggil kelas yang tidak ada sehingga container selalu unhealthy.
 
 # Run application
 ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]
