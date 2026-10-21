@@ -120,6 +120,30 @@ class IdentityExtractionTest {
     }
 
     @Test
+    void nilaiTeksYangSalahPolaAtauMemuatKataTambahanDiganti() throws Exception {
+        // Pola rusak ("- RUMBIA", "- =BOULE = 5") atau kata tambahan ("HISLAM", "PELAJAR/MAHASISWA BOMBANA")
+        // diganti pembacaan pendamping. Nilai yang sudah benar tetap dipakai.
+        java.util.Map<String, Object> f = new java.util.LinkedHashMap<>();
+        f.put("agama", RuleExtractor.leaf("HISLAM", "HISLAM", null));
+        f.put("kecamatan", RuleExtractor.leaf("- RUMBIA", "- RUMBIA", null));
+        f.put("kelurahan_desa", RuleExtractor.leaf("- =BOULE = 5", "- =BOULE = 5", null));
+        f.put("pekerjaan", RuleExtractor.leaf("PELAJAR/MAHASISWA BOMBANA", "PELAJAR/MAHASISWA BOMBANA", null));
+        f.put("nama", RuleExtractor.leaf("BUDI SANTOSO", "BUDI SANTOSO", null));
+        JsonNode vision = MAPPER.readTree("{\"agama\":\"ISLAM\",\"kecamatan\":\"RUMBIA\",\"kelurahan_desa\":\"DOULE\","
+                + "\"pekerjaan\":\"PELAJAR/MAHASISWA\",\"nama\":\"BUDI SANTOSO.\"}");
+        RuleExtractor.mergeVision(f, vision);
+        JsonNode j = MAPPER.valueToTree(f);
+        assertEquals("ISLAM", j.get("agama").get("value").asText());
+        assertEquals("llm", j.get("agama").get("source").asText());
+        assertEquals("RUMBIA", j.get("kecamatan").get("value").asText());
+        assertEquals("DOULE", j.get("kelurahan_desa").get("value").asText());
+        assertEquals("PELAJAR/MAHASISWA", j.get("pekerjaan").get("value").asText());
+        // Hanya beda tanda baca: nilai teks tetap.
+        assertEquals("BUDI SANTOSO", j.get("nama").get("value").asText());
+        assertEquals("rule", j.get("nama").get("source").asText());
+    }
+
+    @Test
     void nikTidakValidTetapDitampilkanSebagaiPerluDicek() throws Exception {
         // Bulan "67" tidak valid, tetapi bacaan OCR tetap ditampilkan dan ditandai untuk diperiksa pengguna.
         JsonNode f = MAPPER.valueToTree(RuleExtractor.extractIdentity("NIK 3271014567890123 Nama CONTOH"));

@@ -454,11 +454,43 @@ public final class RuleExtractor {
         for (String k : List.copyOf(f.keySet())) {
             if (kosong(f, k) && !kosong(v, k)) f.put(k, tandaLlm(v, k));
         }
+        // Nilai teks yang tidak sesuai pola field, atau memuat kata tambahan dibanding pembacaan pendamping, diganti.
+        for (String k : PENGGANTIAN_BILA_TIDAK_COCOK) {
+            if (kosong(f, k) || kosong(v, k)) continue;
+            String teks = String.valueOf(nilai(f, k));
+            String pendamping = String.valueOf(nilai(v, k));
+            if (!polaValid(k, teks) || kunciMemuat(teks, pendamping)) {
+                f.put(k, tandaLlm(v, k));
+            }
+        }
         // Alamat sering salah baca dari teks (huruf dan urutan baris). Pembacaan pendamping dipakai bila berbeda.
         if (!kosong(f, "alamat") && !kosong(v, "alamat")
                 && !String.valueOf(nilai(f, "alamat")).equalsIgnoreCase(String.valueOf(nilai(v, "alamat")))) {
             f.put("alamat", tandaLlm(v, "alamat"));
         }
+    }
+
+    /** Field KTP berbentuk teks yang boleh diganti pembacaan pendamping saat pola tidak cocok. */
+    static final List<String> PENGGANTIAN_BILA_TIDAK_COCOK = List.of(
+            "nama", "tempat_lahir", "kelurahan_desa", "kecamatan", "agama", "pekerjaan", "kewarganegaraan",
+            "status_perkawinan", "jenis_kelamin");
+    static final Set<String> AGAMA_BAKU = Set.of("ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU");
+
+    /** Pola yang dianggap wajar untuk nilai teks KTP: huruf kapital dengan tanda baca umum, tanpa tanda aneh. */
+    static boolean polaValid(String kunci, String teks) {
+        if (teks == null || teks.isBlank()) return false;
+        if ("agama".equals(kunci)) return AGAMA_BAKU.contains(teks.trim().toUpperCase(Locale.ROOT));
+        return teks.trim().matches("[A-Z][A-Z .'/-]*");
+    }
+
+    /** Nilai teks memuat pembacaan pendamping sebagai bagian yang lebih panjang, misalnya kata kota ikut terbaca. */
+    static boolean kunciMemuat(String teks, String pendamping) {
+        String t = normalisasi(teks), p = normalisasi(pendamping);
+        return !p.isEmpty() && t.length() > p.length() && t.contains(p);
+    }
+
+    private static String normalisasi(String s) {
+        return s == null ? "" : s.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
     }
 
     private static void tambahBaris(StringBuilder sb, String label, JsonNode nilai) {
