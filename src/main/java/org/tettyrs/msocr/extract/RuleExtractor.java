@@ -29,9 +29,10 @@ public final class RuleExtractor {
     // Deretan 16 digit, boleh dengan spasi OCR di antaranya, dan tidak menempel ke digit lain.
     private static final Pattern NIK_CANDIDATE = Pattern.compile("(?<!\\d)(?:\\d ?){15}\\d(?!\\d)");
 
-    // Penanda struk BBM: nama SPBU, nama produk, atau label "Nama Produk" dan "Harga/Liter".
+    // Penanda struk BBM: nama SPBU, nama produk, atau label "Nama Produk" dan "Harga/Liter". Toleran terhadap OCR
+    // kasar: "SPBU" bisa terbaca "ZASPBUIS" (tanpa batas kata), dan produk sering terpotong ("PERTALI").
     private static final Pattern FUEL_MARKER = Pattern.compile(
-            "\\b(PERTAMINA|SPBU|BBM|BENSIN|SOLAR|PERTAMAX|PERTALITE|PERTADEX|DEXLITE|DEX)\\b|NAMA PRODUK|HARGA/LITER");
+            "SPBU|PERTAMINA|PERTA(?:MAX|MINA|DEX|[LI][A-Z]{2,4})|\\b(?:BBM|BENSIN|SOLAR|DEX)\\b|NAMA PRODUK|HARGA\\s*/\\s*LIT");
 
     static final double CONF_RULE = 0.95;
     static final double CONF_CORRECTED = 0.8;
@@ -73,6 +74,29 @@ public final class RuleExtractor {
         return new Result(DOC_RECEIPT, receipt(text));
     }
 
+    // Penanda struk umum (kwitansi, nota, parkir, total, Rp). Dipakai hanya untuk unggahan auto, supaya dokumen
+    // yang tidak punya penanda apa pun tidak dianggap struk.
+    private static final Pattern STRUK_MARKER = Pattern.compile(
+            "STRUK|KWITANSI|\\bNOTA\\b|PARKIR|\\bTOTAL\\b|\\bRP\\b");
+
+    /**
+     * Kategori untuk unggahan auto, dari isi teks: identity (KTP), reimburse (surat tugas, SPD, BBM, struk),
+     * atau other (tidak ada penanda yang cocok). Jenis dokumen yang tepat tetap ditentukan extractReimburse
+     * atau extractIdentity; fungsi ini hanya memilih jalur pemrosesan.
+     */
+    public static String kategoriAuto(String rawText) {
+        String text = collapse(rawText);
+        String upper = text.toUpperCase(Locale.ROOT);
+        if (upper.contains("KARTU TANDA PENDUDUK") || (upper.contains("NIK") && NIK_CANDIDATE.matcher(text).find())) {
+            return "identity";
+        }
+        if (upper.contains("SURAT TUGAS") || upper.contains("PERJALANAN DINAS") || upper.contains("SPPD")
+                || FUEL_MARKER.matcher(upper).find() || STRUK_MARKER.matcher(upper).find()) {
+            return "reimburse";
+        }
+        return "other";
+    }
+
     // ---------------------------------------------------------------- Struk BBM (extraction-schema.md, REIMBURSEMENT_FUEL)
 
     /**
@@ -85,7 +109,8 @@ public final class RuleExtractor {
         f.put("tanggal", anyDate(t));
         f.put("spbu_penerbit", text(t, "(\\d{2}\\.\\d{3}\\.\\d{2})"));
         // Satu atau dua kata (mis. DEXLITE, PERTAMAX TURBO). Kata "Rp" dan label berikutnya bukan bagian nama.
-        f.put("jenis_bbm", produkBbm(text(t, "(?i)Nama\\s*Produk\\s*:?\\s*([A-Za-z0-9+]+(?:\\s+(?!Rp\\b|Harga|Marga|Liter|Volume|Total|Pulau|Pompa|Operator|CASH)[A-Za-z0-9+]+)?)")));
+        // Label "Janis BBM" dan "Jenis BBM" sering terbaca salah, dan pemisah sebelum nilai bisa berupa "|" atau simbol.
+        f.put("jenis_bbm", produkBbm(text(t, "(?i)(?:Nama\\s*Produk|(?:Jenis|Janis)\\s*BBM)[^A-Za-z0-9+]*([A-Za-z0-9+]+(?:\\s+(?!Rp\\b|Harga|Marga|Liter|Volume|Total|Pulau|Pompa|Operator|CASH)[A-Za-z0-9+]+)?)")));
         f.put("liter", liter(t));
         f.put("nominal_total", totalHarga(t));
         // OCR sering menyisipkan simbol di antara label dan nilai, jadi yang dilewati adalah non-huruf-angka.
@@ -173,7 +198,8 @@ public final class RuleExtractor {
 
     /** Total pembayaran dari baris "Total Harga Rp ...". Dibedakan dari "Harga/Liter". */
     static Map<String, Object> totalHarga(String t) {
-        Matcher m = Pattern.compile("(?i)[ti]otal\\s*Harga\\s*:?\\s*Rp\\.?\\s*([0-9][0-9.,]*)").matcher(t);
+        // "Total Harga" atau "Total" saja. Di antaranya boleh ada sampah OCR (mis. "Total i fp, 20000") yang terbatas panjangnya.
+        Matcher m = Pattern.compile("(?i)[ti]otal(?!\\s*(?:Liter|Volume))\\s*(?:Harga)?[^0-9\\n]{0,12}?([0-9][0-9.,]*)").matcher(t);
         return m.find() ? money(m.group(1)) : empty();
     }
 
@@ -237,10 +263,14 @@ public final class RuleExtractor {
 
     private static List<Map<String, Object>> suratTugasPegawai(String t) {
         List<Map<String, Object>> out = new ArrayList<>();
-        Matcher block = Pattern.compile("Menugaskan kepada\\s*:?\\s*(.+?)\\s+Uraian Tugas").matcher(t);
+        // Daftar pegawai berakhir di label berikutnya. Label itu berbeda antar-format surat (Uraian Tugas atau
+        // Maksud Perjalanan), jadi dipilih yang pertama muncul.
+        Matcher block = Pattern.compile(
+                "Menugaskan kepada\\s*:?\\s*(.+?)\\s+(?=Uraian Tugas|Maksud Perjalanan|Tempat Tujuan|Tanggal\\s*:|Sumber Biaya)")
+                .matcher(t);
         if (!block.find()) return out;
         Matcher m = Pattern.compile(
-                "\\d+\\.\\s*Nama\\s*:\\s*(.+?)\\s+NIP\\s*:?\\s*" + NIP_RE + "\\s+Pangkat[^:]{0,10}:\\s*(.+?)\\s+Jabatan\\s*:\\s*(.+?)(?=\\s+\\d+\\.\\s*Nama|$)")
+                "\\d+\\.\\s*Nama\\s*:\\s*(.+?)\\s+NIP\\s*[:+]?\\s*" + NIP_RE + "\\s+Pangkat[^:]{0,10}:\\s*(.+?)\\s+Jabatan\\s*:\\s*(.+?)(?=\\s+\\d+\\.\\s*Nama|$)")
                 .matcher(block.group(1));
         while (m.find()) {
             out.add(orang(m.group(1), m.group(2), m.group(3), m.group(4), null));
@@ -400,6 +430,20 @@ public final class RuleExtractor {
     // Hanya field inti. Pendamping dipanggil bila salah satunya kosong, supaya tidak berjalan untuk setiap dokumen.
     static final Set<String> KUNCI_KTP = Set.of("nik", "nama");
     static final Set<String> KUNCI_DOKUMEN = Set.of("nomor_struk", "nomor_surat", "nomor_spd", "liter", "nominal_total");
+    // Surat tugas dan SPD: hanya field leaf yang bisa diisi pendamping. Nama dan NIP pegawai (daftar) dan
+    // pemberi_tugas (objek bersarang) tidak termasuk: kosong() hanya membaca "value", jadi objek bersarang
+    // selalu dianggap kosong dan memicu pendamping tanpa henti, dan pendamping tidak bisa mengisinya.
+    static final Set<String> KUNCI_SURAT_TUGAS = Set.of("nomor_surat", "tanggal_surat", "tempat_tujuan",
+            "uraian_tugas", "tanggal_mulai");
+    static final Set<String> KUNCI_SPD = Set.of("nomor_spd", "tanggal_spd", "tempat_tujuan", "tanggal_berangkat",
+            "maksud_perjalanan", "alat_angkut");
+
+    static Set<String> kunciPendamping(String docType) {
+        if (DOC_IDENTITY.equals(docType)) return KUNCI_KTP;
+        if (DOC_SURAT_TUGAS.equals(docType)) return KUNCI_SURAT_TUGAS;
+        if (DOC_SPD.equals(docType)) return KUNCI_SPD;
+        return KUNCI_DOKUMEN;
+    }
 
     /**
      * Apakah hasil teks masih kurang dan perlu pendamping vision. Pendamping lambat di CPU, jadi hanya dipanggil bila
@@ -407,7 +451,7 @@ public final class RuleExtractor {
      */
     public static boolean perluPendamping(String docType, Map<String, Object> fields) {
         boolean ktp = DOC_IDENTITY.equals(docType);
-        for (String k : ktp ? KUNCI_KTP : KUNCI_DOKUMEN) {
+        for (String k : kunciPendamping(docType)) {
             if (fields.containsKey(k) && kosong(fields, k)) return true;
         }
         if (ktp) {

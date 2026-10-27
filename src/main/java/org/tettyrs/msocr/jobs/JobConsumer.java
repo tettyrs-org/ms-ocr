@@ -130,16 +130,24 @@ public class JobConsumer {
         }
         try {
             byte[] file = api.fetchFile(documentId);
-            String mode = switch (category) {
-                case "identity" -> OcrEngineHttp.MODE_IDENTITY;
-                case "reimburse" -> OcrEngineHttp.MODE_REIMBURSE;
-                default -> OcrEngineHttp.MODE_TEXT;
-            };
-            OcrEngineHttp.EngineText result = engine.extractText(file, mode);
+            String effective = category;
+            OcrEngineHttp.EngineText result;
+            if ("auto".equals(category)) {
+                // Jenis belum diketahui: baca teks dulu, tentukan kategori dari isinya. KTP dibaca ulang dengan mode
+                // identitas (voting NIK). Dokumen lain tidak memakai mode itu, supaya tidak menambah waktu proses.
+                result = engine.extractText(file, OcrEngineHttp.MODE_TEXT);
+                effective = RuleExtractor.kategoriAuto(result.text());
+                if ("identity".equals(effective)) {
+                    result = engine.extractText(file, OcrEngineHttp.MODE_IDENTITY);
+                }
+                LOG.infof("dokumen %s dikenali sebagai kategori %s", documentId, effective);
+            } else {
+                result = engine.extractText(file, modeFor(category));
+            }
             // Hasil teks dikirim dulu supaya dokumen bisa langsung ditinjau. Pendamping vision menyusul sebagai pengayaan.
-            ObjectNode body = extracted(category, result.text(), result.identityNik(), kind -> null);
+            ObjectNode body = extracted(effective, result.text(), result.identityNik(), kind -> null);
             api.sendExtraction(documentId, body);
-            enrich(documentId, category, body, file);
+            enrich(documentId, effective, body, file);
             ack(msg.id());
         } catch (OcrEngineHttp.OcrException e) {
             // Kegagalan permanen dari ocr-engine: laporkan dan ACK, jangan diulang tanpa henti.
@@ -226,7 +234,10 @@ public class JobConsumer {
         if (!"identity".equals(category) && !RuleExtractor.perluPendamping(docType, fields)) return;
 
         JsonNode vision = engine.extractVision(file, kind);
-        if (vision == null || !vision.isObject() || vision.isEmpty()) return;
+        if (vision == null || !vision.isObject() || vision.isEmpty()) {
+            LOG.warnf("pendamping vision tidak menghasilkan field untuk dokumen %s (kind %s)", documentId, kind);
+            return;
+        }
 
         Map<String, Object> hasil = new java.util.LinkedHashMap<>(fields);
         if ("identity".equals(category)) {
@@ -305,6 +316,15 @@ public class JobConsumer {
         body.put("ocr_text", text);
         body.set("fields", mapper.valueToTree(fields));
         return body;
+    }
+
+    /** Mode engine untuk kategori yang sudah diketahui. */
+    static String modeFor(String category) {
+        return switch (category) {
+            case "identity" -> OcrEngineHttp.MODE_IDENTITY;
+            case "reimburse" -> OcrEngineHttp.MODE_REIMBURSE;
+            default -> OcrEngineHttp.MODE_TEXT;
+        };
     }
 
     static String docTypeFor(String category) {
