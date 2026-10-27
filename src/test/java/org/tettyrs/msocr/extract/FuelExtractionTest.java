@@ -38,6 +38,29 @@ class FuelExtractionTest {
         assertEquals(RuleExtractor.DOC_FUEL, r.docType());
     }
 
+    /** Keluaran OCR kasar dari foto nota kecil: "SPBU" terbaca "SPH GOVE", tetapi "Pertalite" masih terbaca. */
+    @Test
+    void notaOcrKasarTetapDetectedAsFuel() {
+        RuleExtractor.Result r = RuleExtractor.extractReimburse("SPH GOVE\nJanis BBM | Pertalite\nTotal i fp, 20000");
+
+        assertEquals(RuleExtractor.DOC_FUEL, r.docType());
+        assertEquals(20000L, value(r.fields(), "nominal_total"));
+    }
+
+    @Test
+    void produkTerbacaSalahTetapDetectedAsFuel() {
+        RuleExtractor.Result r = RuleExtractor.extractReimburse("Janis BBN 1 Pertaiite\nLiter ! 2");
+
+        assertEquals(RuleExtractor.DOC_FUEL, r.docType());
+    }
+
+    @Test
+    void totalLiterBukanNominal() {
+        RuleExtractor.Result r = RuleExtractor.extractReimburse("SPBU GODEAN\nTotal Liter : 2");
+
+        assertNull(value(r.fields(), "nominal_total"));
+    }
+
     @Test
     void readsTransactionDateProductAndTotal() throws IOException {
         Map<String, Object> f = RuleExtractor.extractReimburse(nota()).fields();
