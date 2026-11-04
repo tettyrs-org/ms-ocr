@@ -87,14 +87,40 @@ public final class RuleExtractor {
     public static String kategoriAuto(String rawText) {
         String text = collapse(rawText);
         String upper = text.toUpperCase(Locale.ROOT);
-        if (upper.contains("KARTU TANDA PENDUDUK") || (upper.contains("NIK") && NIK_CANDIDATE.matcher(text).find())) {
+        if (upper.contains("SURAT TUGAS") || upper.contains("PERJALANAN DINAS") || upper.contains("SPPD")) {
+            return "reimburse";
+        }
+        if (upper.contains("KARTU TANDA PENDUDUK") || (upper.contains("NIK") && NIK_CANDIDATE.matcher(text).find())
+                || jumlahPenandaKtp(upper) >= 3) {
             return "identity";
         }
-        if (upper.contains("SURAT TUGAS") || upper.contains("PERJALANAN DINAS") || upper.contains("SPPD")
-                || FUEL_MARKER.matcher(upper).find() || STRUK_MARKER.matcher(upper).find()) {
+        if (FUEL_MARKER.matcher(upper).find() || STRUK_MARKER.matcher(upper).find()) {
             return "reimburse";
         }
         return "other";
+    }
+
+    // Label yang hanya ada di KTP. OCR sering salah baca labelnya, jadi tiap label dicari dengan toleransi
+    // (mis. "SERLAKU HINGGA", "TEMPAT/TGI LAHIR", "RTRW"). Tiga yang cocok sudah cukup untuk dianggap KTP.
+    private static final List<Pattern> PENANDA_KTP = List.of(
+            Pattern.compile("JENIS\\s*KELAMIN"),
+            Pattern.compile("GOL\\.?\\s*DARAH"),
+            Pattern.compile("STATUS\\s*PERKAWINAN"),
+            Pattern.compile("KEWARGANEGARAAN"),
+            Pattern.compile("BERLAKU\\s*HINGGA|SERLAKU\\s*HINGGA|SEUMUR\\s*HIDUP"),
+            Pattern.compile("TEMPAT\\s*/?\\s*TG[LI]\\s*LAHIR"),
+            Pattern.compile("RT\\s*/?\\s*RW|RTRW"),
+            Pattern.compile("KECAMATAN"),
+            Pattern.compile("KELURAHAN|KEL\\s*/\\s*DESA"),
+            Pattern.compile("PROVINSI"),
+            Pattern.compile("KABUPATEN"));
+
+    static int jumlahPenandaKtp(String upper) {
+        int n = 0;
+        for (Pattern p : PENANDA_KTP) {
+            if (p.matcher(upper).find()) n++;
+        }
+        return n;
     }
 
     // ---------------------------------------------------------------- Struk BBM (extraction-schema.md, REIMBURSEMENT_FUEL)
@@ -105,7 +131,9 @@ public final class RuleExtractor {
      */
     static Map<String, Object> fuel(String t) {
         Map<String, Object> f = new LinkedHashMap<>();
-        f.put("nomor_struk", text(t, "(?i)No\\.?\\s*(?:Trans(?:aksi)?|Struk)\\s*:?\\s*([0-9]+)"));
+        // "Nomor Nota" juga dipakai struk SPBU. OCR sering membaca "Nomor" sebagai "Nowor", dan angka nyasar sebelum
+        // nomor dilewati (mis. "Nota 1 29" berarti nomor 29).
+        f.put("nomor_struk", text(t, "(?i)(?:No\\.?\\s*(?:Trans(?:aksi)?|Trx|Struk)|N\\w{1,4}\\s*Nota)\\s*[:|]?\\s*(?:\\d\\s+)?(\\d{2,})"));
         f.put("tanggal", anyDate(t));
         f.put("spbu_penerbit", text(t, "(\\d{2}\\.\\d{3}\\.\\d{2})"));
         // Satu atau dua kata (mis. DEXLITE, PERTAMAX TURBO). Kata "Rp" dan label berikutnya bukan bagian nama.
@@ -129,13 +157,16 @@ public final class RuleExtractor {
             JsonNode node = vision.path(k);
             if (!node.isValueNode() || node.isNull()) continue;
             String teks = node.asText("").trim();
-            if (teks.isEmpty() || "null".equalsIgnoreCase(teks)) continue;
+            if (placeholder(teks)) continue;
             Map<String, Object> hasil = null;
             if (k.startsWith("tanggal")) {
                 hasil = anyDate(teks);
             } else if (k.equals("liter")) {
                 Matcher m = Pattern.compile("\\d+[.,]\\d+").matcher(teks);
-                if (m.find()) hasil = leaf(Double.parseDouble(m.group().replace(',', '.')), m.group(), "derived");
+                // Volume nol (mis. "0,00") bukan bacaan yang masuk akal untuk nota BBM, jadi tidak diisi.
+                if (m.find() && Double.parseDouble(m.group().replace(',', '.')) > 0) {
+                    hasil = leaf(Double.parseDouble(m.group().replace(',', '.')), m.group(), "derived");
+                }
             } else if (k.equals("nominal_total")) {
                 String digit = teks.replaceAll("[^0-9]", "");
                 if (!digit.isEmpty()) hasil = money(digit);
@@ -191,9 +222,16 @@ public final class RuleExtractor {
     static Map<String, Object> liter(String t) {
         // Satuan dalam kurung sering terbaca salah: "(l)", "(L)", "(0)", "(1)". Kurung seperti itu dilewati.
         Matcher m = Pattern.compile("(?i)Vol\\w*\\s*:?\\s*(?:\\(\\s*[^()\\s]{0,2}\\s*\\))?\\s*:?\\s*(\\d+[.,]\\d+)").matcher(t);
-        if (!m.find()) return empty();
-        String raw = m.group(1);
-        return leaf(Double.parseDouble(raw.replace(',', '.')), raw, null);
+        if (m.find()) {
+            String raw = m.group(1);
+            return leaf(Double.parseDouble(raw.replace(',', '.')), raw, null);
+        }
+        // Struk tanpa label Vol: "Liter | 2" atau "Liter : 15.00 L". Label "Harga/Liter" dilewati karena didahului "/",
+        // dan angka yang diikuti "Rp" adalah harga, bukan volume.
+        Matcher b = Pattern.compile("(?i)(?<![/\\w])Liter\\s*[:|]?\\s*(\\d+(?:[.,]\\d+)?)(?!\\d)(?![.,]?\\d)(?!\\s*(?:Rp|\\d))").matcher(t);
+        if (!b.find()) return empty();
+        String raw = b.group(1);
+        return leaf(Double.parseDouble(raw.replace(',', '.')), raw, "derived");
     }
 
     /** Total pembayaran dari baris "Total Harga Rp ...". Dibedakan dari "Harga/Liter". */
@@ -336,7 +374,7 @@ public final class RuleExtractor {
         Matcher pen = Pattern.compile("(?i)^(.+?)\\s+Jl\\.?").matcher(t);
         f.put("penerbit", pen.find() ? leaf(clean(pen.group(1)), clean(pen.group(1)), null) : empty());
         // Hanya label yang jelas sebagai nomor transaksi. "No. 12" pada alamat tidak dipakai.
-        f.put("nomor_referensi", text(t, "(?i)(?:No\\.?\\s*Trans(?:aksi)?|Nomor\\s*Transaksi|Referensi)\\s*:?\\s*([0-9A-Za-z\\-/]+)"));
+        f.put("nomor_referensi", text(t, "(?i)(?:No\\.?\\s*Trans(?:aksi)?|No\\.?\\s*Trx|No\\.?\\s*Folio|Nomor\\s*Transaksi|Nomor\\s*Trx|Referensi)\\s*:?\\s*([0-9A-Za-z\\-/]+)"));
         Matcher total = Pattern.compile("(?i)total\\s*(?:harga)?\\s*:?\\s*(?:Rp\\.?)?\\s*([0-9][0-9.,]*)").matcher(t);
         f.put("nominal_total", total.find() ? money(total.group(1)) : empty());
         f.put("kategori", kategori(t));
@@ -429,7 +467,10 @@ public final class RuleExtractor {
     /** Field kunci untuk KTP dan dokumen lain. Pendamping vision dipanggil bila salah satunya masih kosong. */
     // Hanya field inti. Pendamping dipanggil bila salah satunya kosong, supaya tidak berjalan untuk setiap dokumen.
     static final Set<String> KUNCI_KTP = Set.of("nik", "nama");
-    static final Set<String> KUNCI_DOKUMEN = Set.of("nomor_struk", "nomor_surat", "nomor_spd", "liter", "nominal_total");
+    // Termasuk spbu_penerbit dan nomor_polisi: keduanya sering kosong dari aturan, dan pendamping harus dipanggil
+    // untuk mengisinya walau nomor dan volume sudah terbaca.
+    static final Set<String> KUNCI_DOKUMEN = Set.of("nomor_struk", "nomor_surat", "nomor_spd", "liter", "nominal_total",
+            "spbu_penerbit", "nomor_polisi");
     // Surat tugas dan SPD: hanya field leaf yang bisa diisi pendamping. Nama dan NIP pegawai (daftar) dan
     // pemberi_tugas (objek bersarang) tidak termasuk: kosong() hanya membaca "value", jadi objek bersarang
     // selalu dianggap kosong dan memicu pendamping tanpa henti, dan pendamping tidak bisa mengisinya.
@@ -487,6 +528,10 @@ public final class RuleExtractor {
         tambahBaris(baris, "Berlaku Hingga", vision.path("berlaku_hingga"));
 
         Map<String, Object> v = extractIdentityTeks(baris.toString(), null);
+        // Alamat dipakai langsung dari JSON pendamping. Pembacaan dari baris sintetis terus sampai RT/RW; bila pendamping
+        // tidak mengirim RT/RW, label berikutnya (mis. Pekerjaan) ikut terbaca sebagai alamat.
+        String alamatV = vision.path("alamat").asText("").trim();
+        if (!alamatV.isEmpty()) v.put("alamat", leaf(alamatV, alamatV, null));
 
         Object nikV = nilai(v, "nik");
         if (nikV != null && validNik(String.valueOf(nikV).replace(" ", ""))) {
@@ -537,9 +582,14 @@ public final class RuleExtractor {
         return s == null ? "" : s.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
     }
 
+    /** Nilai kosong dari pendamping: kosong atau "null". Nilai seperti RT/RW "000/000" bisa memang tertulis di kartu. */
+    static boolean placeholder(String teks) {
+        return teks.isEmpty() || "null".equalsIgnoreCase(teks);
+    }
+
     private static void tambahBaris(StringBuilder sb, String label, JsonNode nilai) {
         String teks = nilai.asText("").trim();
-        if (teks.isEmpty() || "null".equalsIgnoreCase(teks)) return;
+        if (placeholder(teks)) return;
         sb.append(label).append(" : ").append(teks).append('\n');
     }
 
@@ -660,6 +710,18 @@ public final class RuleExtractor {
         return !(f.get(kunci) instanceof Map<?, ?> m) || m.get("value") == null;
     }
 
+    /**
+     * Field KTP yang perlu dibaca pendamping: kosong, NIK tidak lolos validasi, agama di luar daftar baku, atau teks
+     * yang polanya tidak wajar. Field yang lolos pemeriksaan ini tidak dibaca ulang oleh pendamping.
+     */
+    public static boolean fieldKtpLemah(String kunci, Map<String, Object> fields) {
+        if (kosong(fields, kunci)) return true;
+        String teks = String.valueOf(nilai(fields, kunci)).trim();
+        if ("nik".equals(kunci)) return !validNik(teks.replace(" ", ""));
+        if ("agama".equals(kunci)) return !AGAMA_BAKU.contains(teks.toUpperCase(Locale.ROOT));
+        return PENGGANTIAN_BILA_TIDAK_COCOK.contains(kunci) && !polaValid(kunci, teks);
+    }
+
     /** Nilai dari baris yang memuat label: sisa baris itu, atau baris berikutnya bila sisanya kosong. */
     static String nilaiBaris(String raw, String label) {
         if (raw == null) return null;
@@ -727,7 +789,7 @@ public final class RuleExtractor {
     }
 
     /** Kode provinsi 11-94, tanggal 01-31 (laki-laki) atau 41-71 (perempuan, +40), dan bulan 01-12. */
-    static boolean validNik(String d) {
+    public static boolean validNik(String d) {
         if (d.length() != 16) return false;
         int prov = Integer.parseInt(d.substring(0, 2));
         int day = Integer.parseInt(d.substring(6, 8));
@@ -842,18 +904,39 @@ public final class RuleExtractor {
         return leaf(iso, raw, "derived");
     }
 
+    /**
+     * Nama bulan dari OCR. Nama yang salah satu-dua huruf dianggap bulan terdekat, misalnya "Novenber" menjadi November.
+     * Null bila tidak ada bulan yang cukup dekat.
+     */
+    static Integer bulanOcr(String kata) {
+        String k = kata.toLowerCase(Locale.ROOT);
+        Integer exact = BULAN.get(k);
+        if (exact != null || k.length() < 4) return exact;
+        String terdekat = null;
+        int jarak = Integer.MAX_VALUE;
+        for (String nama : BULAN.keySet()) {
+            int d = levenshtein(k, nama);
+            if (d < jarak) {
+                jarak = d;
+                terdekat = nama;
+            }
+        }
+        return jarak <= 2 ? BULAN.get(terdekat) : null;
+    }
+
     /** "15 September 2026" menjadi "2026-09-15". Null bila hari atau bulan tidak terbaca. */
     static String isoDate(String raw) {
         String[] p = raw.replace("?", "").trim().split("\\s+");
         if (p.length != 3) return null;
-        Integer month = BULAN.get(p[1].toLowerCase(Locale.ROOT));
+        Integer month = bulanOcr(p[1]);
         if (month == null) return null;
         return String.format("%s-%02d-%02d", p[2], month, Integer.parseInt(p[0]));
     }
 
     static Map<String, Object> money(String raw) {
         String digits = raw.replaceAll("[^0-9]", "");
-        if (digits.isEmpty()) return empty();
+        // Lebih dari 15 digit tidak masuk akal untuk nominal, dan bisa melampaui batas long (NumberFormatException).
+        if (digits.isEmpty() || digits.length() > 15) return empty();
         long v = Long.parseLong(digits);
         return leaf(v, raw.trim(), raw.trim().equals(String.valueOf(v)) ? null : "derived");
     }

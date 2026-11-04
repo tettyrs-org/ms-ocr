@@ -46,6 +46,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
+        <!-- Server REST untuk demo tanpa database (/demo/extract): hanya ekstraksi, tanpa menyimpan apa pun. -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
         <!-- Antrian job dari API (Redis Streams, api-spec bagian 8) -->
         <dependency>
             <groupId>io.quarkus</groupId>

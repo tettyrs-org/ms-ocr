@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -123,31 +124,63 @@ public class JobConsumer {
     void handle(StreamMessage<String, String, String> msg) {
         String documentId = msg.payload().get("document_id");
         String category = msg.payload().getOrDefault("category", "other");
-        if (documentId == null) {
-            LOG.warnf("job %s tanpa document_id dibuang", msg.id());
+        if (documentId == null || !documentId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")) {
+            // Bukan UUID: tidak akan pernah berhasil, jadi dibuang dan di-ACK (tidak macetkan antrian).
+            LOG.warnf("job %s dengan document_id tidak valid dibuang", msg.id());
             ack(msg.id());
             return;
         }
         try {
+            // Waktu tiap tahap dicatat (ms), supaya tahap yang lambat terlihat di log.
+            long t0 = System.nanoTime();
             byte[] file = api.fetchFile(documentId);
+            long tUnduh = ms(t0);
             String effective = category;
             OcrEngineHttp.EngineText result;
+            long tTeks = 0;
+            long tIdentitas = 0;
             if ("auto".equals(category)) {
                 // Jenis belum diketahui: baca teks dulu, tentukan kategori dari isinya. KTP dibaca ulang dengan mode
                 // identitas (voting NIK). Dokumen lain tidak memakai mode itu, supaya tidak menambah waktu proses.
+                long s = System.nanoTime();
                 result = engine.extractText(file, OcrEngineHttp.MODE_TEXT);
+                tTeks = ms(s);
                 effective = RuleExtractor.kategoriAuto(result.text());
                 if ("identity".equals(effective)) {
+                    s = System.nanoTime();
                     result = engine.extractText(file, OcrEngineHttp.MODE_IDENTITY);
+                    tIdentitas = ms(s);
                 }
                 LOG.infof("dokumen %s dikenali sebagai kategori %s", documentId, effective);
             } else {
+                long s = System.nanoTime();
                 result = engine.extractText(file, modeFor(category));
+                tTeks = ms(s);
             }
             // Hasil teks dikirim dulu supaya dokumen bisa langsung ditinjau. Pendamping vision menyusul sebagai pengayaan.
             ObjectNode body = extracted(effective, result.text(), result.identityNik(), kind -> null);
-            api.sendExtraction(documentId, body);
-            enrich(documentId, effective, body, file);
+            long tKirim;
+            long tPendamping;
+            if ("identity".equals(effective)) {
+                // KTP: pendamping dijalankan dulu, lalu hasil akhir dikirim sekali. Field tidak berubah setelah tampil.
+                long s = System.nanoTime();
+                mergePendampingSebelumKirim(documentId, body, file);
+                tPendamping = ms(s);
+                s = System.nanoTime();
+                api.sendExtraction(documentId, body);
+                tKirim = ms(s);
+            } else {
+                // Struk dan dokumen lain: pendamping dijalankan dulu, lalu hasil akhir dikirim sekali. Halaman tinjau
+                // tidak menunggu pengayaan terpisah.
+                long s = System.nanoTime();
+                mergePendampingDokumenSebelumKirim(documentId, body, file);
+                tPendamping = ms(s);
+                s = System.nanoTime();
+                api.sendExtraction(documentId, body);
+                tKirim = ms(s);
+            }
+            LOG.infof("dokumen %s selesai: unduh %d ms, teks %d ms, identitas %d ms, kirim %d ms, pendamping %d ms, total %d ms",
+                    documentId, tUnduh, tTeks, tIdentitas, tKirim, tPendamping, ms(t0));
             ack(msg.id());
         } catch (OcrEngineHttp.OcrException e) {
             // Kegagalan permanen dari ocr-engine: laporkan dan ACK, jangan diulang tanpa henti.
@@ -155,19 +188,27 @@ public class JobConsumer {
             ack(msg.id());
         } catch (IOException e) {
             // Sementara (API atau jaringan). Tidak di-ACK, sehingga job bisa dicoba lagi.
-            int attempts = countAttempt(msg.id());
-            if (attempts < MAX_ATTEMPTS) {
-                LOG.warnf("job dokumen %s ditunda (percobaan %d/%d): %s", documentId, attempts, MAX_ATTEMPTS, e.getMessage());
-                return;
-            }
-            // Batas percobaan habis: laporkan gagal dan pindahkan ke dead letter agar tidak diulang tanpa henti.
-            LOG.errorf("job dokumen %s gagal %d kali, dipindah ke %s", documentId, attempts, DEAD);
-            report(documentId, "RETRY_EXHAUSTED");
-            deadLetter(msg, documentId);
-            ack(msg.id());
+            retryOrDeadLetter(msg, documentId, e);
+        } catch (RuntimeException e) {
+            // Exception tak terduga (mis. data OCR di luar dugaan). Diperlakukan seperti gagal sementara supaya
+            // pesan tidak tertahan di pending list dan menghentikan job lain; setelah batas, pindah ke dead letter.
+            retryOrDeadLetter(msg, documentId, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void retryOrDeadLetter(StreamMessage<String, String, String> msg, String documentId, Exception e) {
+        int attempts = countAttempt(msg.id());
+        if (attempts < MAX_ATTEMPTS) {
+            LOG.warnf("job dokumen %s ditunda (percobaan %d/%d): %s", documentId, attempts, MAX_ATTEMPTS, e.getMessage());
+            return;
+        }
+        // Batas percobaan habis: laporkan gagal dan pindahkan ke dead letter agar tidak diulang tanpa henti.
+        LOG.errorf("job dokumen %s gagal %d kali, dipindah ke %s", documentId, attempts, DEAD);
+        report(documentId, "RETRY_EXHAUSTED");
+        deadLetter(msg, documentId);
+        ack(msg.id());
     }
 
     /** Menambah penghitung percobaan untuk satu pesan. Disimpan di Redis agar bertahan saat restart. */
@@ -221,48 +262,76 @@ public class JobConsumer {
         return extracted(category, text, null);
     }
 
+    /** Kunci field yang masih kosong. Dipakai untuk meminta pendamping hanya pada field itu. */
+    static List<String> kunciKosong(Map<String, Object> fields) {
+        List<String> kunci = new java.util.ArrayList<>();
+        for (Map.Entry<String, Object> e : fields.entrySet()) {
+            if (e.getValue() instanceof Map<?, ?> leaf && RuleExtractor.kosongLeaf(leaf)) kunci.add(e.getKey());
+        }
+        return kunci;
+    }
+
     /**
-     * Pengayaan dari pendamping vision setelah hasil teks tersimpan. KTP selalu dilengkapi. Dokumen hanya bila
-     * field inti masih kosong. Hanya field yang berubah yang dikirim. Gagal di sini tidak mengubah hasil teks.
+     * Struk dan dokumen lain: pendamping digabungkan ke field sebelum hasil dikirim. Hanya dipanggil bila jenis
+     * dokumen didukung pendamping dan ada field inti yang kosong. Gagal atau kosong: hasil teks tetap dikirim.
      */
-    void enrich(String documentId, String category, ObjectNode body, byte[] file) throws IOException, InterruptedException {
+    void mergePendampingDokumenSebelumKirim(String documentId, ObjectNode body, byte[] file)
+            throws IOException, InterruptedException {
         String docType = body.path("doc_type").asText("");
-        String kind = "identity".equals(category) ? "identity" : kindPendamping(docType);
+        String kind = kindPendamping(docType);
         if (kind == null) return;
         Map<String, Object> fields = mapper.convertValue(body.path("fields"), new TypeReference<Map<String, Object>>() {});
-        if (fields == null) return;
-        if (!"identity".equals(category) && !RuleExtractor.perluPendamping(docType, fields)) return;
-
-        JsonNode vision = engine.extractVision(file, kind);
+        if (fields == null || !RuleExtractor.perluPendamping(docType, fields)) return;
+        // Hanya field yang masih kosong yang diminta. Keluaran yang lebih pendek membuat balasan lebih cepat di CPU.
+        JsonNode vision = engine.extractVision(file, kind, kunciKosong(fields));
         if (vision == null || !vision.isObject() || vision.isEmpty()) {
             LOG.warnf("pendamping vision tidak menghasilkan field untuk dokumen %s (kind %s)", documentId, kind);
             return;
         }
+        RuleExtractor.mergeVisionDokumen(fields, vision);
+        body.set("fields", mapper.valueToTree(fields));
+    }
 
-        Map<String, Object> hasil = new java.util.LinkedHashMap<>(fields);
-        if ("identity".equals(category)) {
-            RuleExtractor.mergeVision(hasil, vision);
-        } else {
-            RuleExtractor.mergeVisionDokumen(hasil, vision);
+    /**
+     * Field KTP yang sering salah dibaca aturan (OCR). Pendamping diminta membacanya hanya bila field itu lemah
+     * (lihat RuleExtractor.fieldKtpLemah), dan aturan penggantian di mergeVision memutuskan apakah nilainya dipakai.
+     */
+    static final List<String> KUNCI_KTP_RAWAN = List.of(
+            "nik", "nama", "alamat", "rt_rw", "kelurahan_desa", "kecamatan", "agama", "pekerjaan");
+
+    /**
+     * Kunci yang diminta ke pendamping untuk KTP. Alamat dan pekerjaan selalu diminta: Tesseract sering salah membaca
+     * keduanya (mis. tulisan stempel ikut terbaca) walau polanya tampak wajar. Field rawan lain hanya diminta bila
+     * lemah (lihat fieldKtpLemah), dan field kosong di luar daftar ikut diminta.
+     */
+    static List<String> kunciPendampingKtp(Map<String, Object> fields) {
+        List<String> kunci = new java.util.ArrayList<>(List.of("alamat", "pekerjaan"));
+        for (String k : KUNCI_KTP_RAWAN) {
+            if (!kunci.contains(k) && RuleExtractor.fieldKtpLemah(k, fields)) kunci.add(k);
         }
-
-        Map<String, Object> perubahan = new java.util.LinkedHashMap<>();
-        for (Map.Entry<String, Object> e : hasil.entrySet()) {
-            if (e.getValue() == fields.get(e.getKey())) continue; // tidak berubah
-            if (!(e.getValue() instanceof Map<?, ?> leaf)) continue;
-            Map<String, Object> baru = new java.util.LinkedHashMap<>((Map<String, Object>) leaf);
-            // Nilai teks yang sudah ada digantikan (mis. NIK tidak valid, alamat berbeda). Field kosong hanya diisi.
-            if (!RuleExtractor.kosongLeaf(fields.get(e.getKey()))) baru.put("replace", true);
-            perubahan.put(e.getKey(), baru);
+        for (Map.Entry<String, Object> e : fields.entrySet()) {
+            if (e.getValue() instanceof Map<?, ?> leaf && RuleExtractor.kosongLeaf(leaf) && !kunci.contains(e.getKey())) {
+                kunci.add(e.getKey());
+            }
         }
-        if (perubahan.isEmpty()) return;
+        return kunci;
+    }
 
-        ObjectNode pengayaan = mapper.createObjectNode();
-        pengayaan.put("status", "extracted");
-        pengayaan.put("doc_type", docType);
-        pengayaan.put("enrichment", true);
-        pengayaan.set("fields", mapper.valueToTree(perubahan));
-        api.sendExtraction(documentId, pengayaan);
+    /**
+     * KTP: pendamping digabungkan ke field sebelum hasil dikirim, supaya hasil akhir tampil sekaligus.
+     * Gagal atau kosong dari pendamping: body tetap berisi hasil teks saja.
+     */
+    void mergePendampingSebelumKirim(String documentId, ObjectNode body, byte[] file)
+            throws IOException, InterruptedException {
+        Map<String, Object> fields = mapper.convertValue(body.path("fields"), new TypeReference<Map<String, Object>>() {});
+        if (fields == null) return;
+        JsonNode vision = engine.extractVision(file, "identity", kunciPendampingKtp(fields));
+        if (vision == null || !vision.isObject() || vision.isEmpty()) {
+            LOG.warnf("pendamping vision tidak menghasilkan field untuk dokumen %s", documentId);
+            return;
+        }
+        RuleExtractor.mergeVision(fields, vision);
+        body.set("fields", mapper.valueToTree(fields));
     }
 
     /** Jenis pendamping vision untuk jenis dokumen. Null bila jenis tidak didukung. */
@@ -277,6 +346,35 @@ public class JobConsumer {
     }
 
     /** `identityNik` = NIK terpilih dari engine (mode identitas). Null bila engine tidak memilih. */
+    /**
+     * Ekstraksi untuk demo: OCR lalu aturan ekstraksi, tanpa antrean, callback ke API, atau penyimpanan.
+     * Hasilnya langsung dikembalikan ke pemanggil dan tidak ditulis di mana pun. `tahap` dipanggil sebelum tiap
+     * tahap ("teks", "identitas", "pendamping") supaya pemanggil bisa menampilkan kemajuan.
+     */
+    public ObjectNode ekstrakDemo(byte[] file, String category, Consumer<String> tahap) throws Exception {
+        String effective = category;
+        OcrEngineHttp.EngineText result;
+        tahap.accept("teks");
+        if ("auto".equals(category)) {
+            result = engine.extractText(file, OcrEngineHttp.MODE_TEXT);
+            effective = RuleExtractor.kategoriAuto(result.text());
+            if ("identity".equals(effective)) {
+                tahap.accept("identitas");
+                result = engine.extractText(file, OcrEngineHttp.MODE_IDENTITY);
+            }
+        } else {
+            if ("identity".equals(category)) tahap.accept("identitas");
+            result = engine.extractText(file, modeFor(category));
+        }
+        ObjectNode body = extracted(effective, result.text(), result.identityNik(), kind -> null);
+        // KTP: pendamping vision mengisi NIK dan nama yang tidak terbaca OCR. Hanya fungsi baca, tanpa penyimpanan.
+        if ("identity".equals(effective)) {
+            tahap.accept("pendamping");
+            mergePendampingSebelumKirim("demo", body, file);
+        }
+        return body;
+    }
+
     ObjectNode extracted(String category, String text, String identityNik) {
         return extracted(category, text, identityNik, kind -> null);
     }
@@ -316,6 +414,11 @@ public class JobConsumer {
         body.put("ocr_text", text);
         body.set("fields", mapper.valueToTree(fields));
         return body;
+    }
+
+    /** Lama (ms) sejak waktu nano `mulai`. */
+    static long ms(long mulai) {
+        return (System.nanoTime() - mulai) / 1_000_000;
     }
 
     /** Mode engine untuk kategori yang sudah diketahui. */

@@ -29,6 +29,10 @@ public class OcrEngineHttp {
     @ConfigProperty(name = "ocr.engine.url")
     String engineUrl;
 
+    // Token bersama dengan ocr-engine (OCR_INTERNAL_TOKEN). Engine menolak permintaan tanpa token yang sama.
+    @ConfigProperty(name = "internal.token", defaultValue = "")
+    String internalToken;
+
     @Inject
     ObjectMapper mapper;
 
@@ -37,6 +41,12 @@ public class OcrEngineHttp {
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(5))
             .build();
+
+    private HttpRequest.Builder denganToken(HttpRequest.Builder builder) {
+        return internalToken == null || internalToken.isBlank()
+                ? builder
+                : builder.header("X-Internal-Token", internalToken);
+    }
 
     /** Kegagalan dari ocr-engine (bukan jaringan). Dicatat sebagai callback `failed`. */
     public static class OcrException extends Exception {
@@ -79,12 +89,12 @@ public class OcrEngineHttp {
         body.write(tail);
 
         String url = engineUrl + "/ocr" + (MODE_TEXT.equals(mode) ? "" : "?mode=" + mode);
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 // KTP memanggil pendamping vision di CPU (sampai ~3 menit saat model dimuat), jadi batasnya lebih longgar.
                 .timeout(Duration.ofSeconds(berat ? 300 : 120))
-                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
-                .build();
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()));
+        HttpRequest req = denganToken(builder).build();
         HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
         if (res.statusCode() != 200) {
             throw new OcrException("OCR_ENGINE_" + res.statusCode());
@@ -111,6 +121,14 @@ public class OcrEngineHttp {
      * atau pendamping mati, hasilnya objek kosong dan ekstraksi tetap memakai teks.
      */
     public JsonNode extractVision(byte[] file, String kind) {
+        return extractVision(file, kind, java.util.List.of());
+    }
+
+    /**
+     * Sama seperti extractVision(file, kind), tetapi hanya meminta `fields` (kunci yang masih kosong). Balasan lebih
+     * pendek, sehingga lebih cepat di CPU. Daftar kosong berarti semua field.
+     */
+    public JsonNode extractVision(byte[] file, String kind, java.util.List<String> fields) {
         try {
             String boundary = "----ocr" + UUID.randomUUID();
             String contentType = detectContentType(file);
@@ -122,11 +140,12 @@ public class OcrEngineHttp {
             body.write(head);
             body.write(file);
             body.write(tail);
-            HttpRequest req = HttpRequest.newBuilder(URI.create(engineUrl + "/vision?kind=" + kind))
+            String query = "/vision?kind=" + kind + (fields.isEmpty() ? "" : "&fields=" + String.join(",", fields));
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(engineUrl + query))
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .timeout(Duration.ofSeconds(300))
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()));
+            HttpRequest req = denganToken(builder).build();
             HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
             if (res.statusCode() != 200) {
                 LOG.warnf("pendamping vision gagal: HTTP %d", res.statusCode());

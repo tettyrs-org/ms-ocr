@@ -28,6 +28,21 @@ class AutoClassificationTest {
     }
 
     @Test
+    void ktpTanpaLabelNikTetapMasukIdentitas() {
+        // Teks OCR nyata dari ktp-org.jpg: label "NIK" terbaca rusak dan nomornya 17 digit, tetapi penanda KTP lengkap.
+        String teks = "= : KABUPATEN\nms 1 21065014812940003\nNama SHS HASMAWALK\nTempat/Tgi Lahir— RAROWATU, 08-12-1994\n"
+                + "Jenis kelamin \"PEREMPUAN — Gol. Darah ——\nAlamat JEND-SUDIRMAN\nRTRW 2900/6000\nKecamatan —=RUMBIA—\n"
+                + "Status Perkawinan: BELUM KAWIN\nKewarganegaraan: WNI\nSerlaku Hingga — SEUMUR HIDUP";
+        assertEquals("identity", RuleExtractor.kategoriAuto(teks));
+    }
+
+    @Test
+    void penandaKtpKurangDariTigaTidakCukupUntukIdentitas() {
+        // Sad path: dua penanda kebetulan ada di dokumen lain tidak boleh membuatnya dianggap KTP.
+        assertEquals("other", RuleExtractor.kategoriAuto("Kabupaten Bogor\nPekerjaan: Guru"));
+    }
+
+    @Test
     void notaBbmMasukReimburse() {
         assertEquals("reimburse", RuleExtractor.kategoriAuto("SPBU 24.316.51\nNama Produk: PERTALITE\nTotal Rp 20.000"));
     }
