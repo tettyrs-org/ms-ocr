@@ -4,6 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.stream.StreamCommands;
 import io.quarkus.redis.datasource.stream.StreamMessage;
@@ -121,7 +127,37 @@ public class JobConsumer {
         }
     }
 
+    /** Pemulihan traceparent dari payload job. Konteks dari api dilanjutkan, bukan dimulai baru. */
+    private static final TextMapGetter<Map<String, String>> GETTER = new TextMapGetter<>() {
+        @Override
+        public Iterable<String> keys(Map<String, String> carrier) {
+            return carrier.keySet();
+        }
+
+        @Override
+        public String get(Map<String, String> carrier, String key) {
+            return carrier == null ? null : carrier.get(key);
+        }
+    };
+    private static final Tracer TRACER = GlobalOpenTelemetry.getTracer("ms-ocr");
+
+    /** Satu job dalam satu span yang merupakan anak dari span api. Isi dokumen tidak masuk ke span. */
     void handle(StreamMessage<String, String, String> msg) {
+        Context induk = GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
+                .extract(Context.root(), msg.payload(), GETTER);
+        Span span = TRACER.spanBuilder("process job").setParent(induk)
+                .setAttribute("messaging.message.id", msg.id()).startSpan();
+        try (Scope ignored = span.makeCurrent()) {
+            prosesJob(msg);
+        } catch (RuntimeException e) {
+            span.recordException(e);
+            throw e;
+        } finally {
+            span.end();
+        }
+    }
+
+    void prosesJob(StreamMessage<String, String, String> msg) {
         String documentId = msg.payload().get("document_id");
         String category = msg.payload().getOrDefault("category", "other");
         if (documentId == null || !documentId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")) {

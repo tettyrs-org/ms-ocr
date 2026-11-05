@@ -1,4 +1,15 @@
 quarkus:
+  # Tracing OpenTelemetry. Mati kecuali OCR_TRACES_EXPORTER=otlp. Trace dari api dilanjutkan lewat traceparent di job.
+  otel:
+    service:
+      name: ${OTEL_SERVICE_NAME:ms-ocr}
+    traces:
+      exporter: ${OCR_TRACES_EXPORTER:none}
+    exporter:
+      otlp:
+        traces:
+          endpoint: ${OCR_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+          protocol: http/protobuf
   http:
     port: 8080
     host: 0.0.0.0
