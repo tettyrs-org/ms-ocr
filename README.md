@@ -167,7 +167,7 @@ Listed openly so they are not mistaken for solved problems:
 
 - [ocr-engine](https://github.com/tettyrs-org/ocr-engine) - Python OCR extraction service that this service calls
 - [ocr-api](https://github.com/tettyrs-org/ocr-api) - Public API and document lifecycle
-- Flutter web app and Backend-for-Frontend (BFF), not published as a separate repository
+- [ocr-app](https://github.com/tettyrs-org/ocr-app) - Flutter web app and Backend-for-Frontend (BFF)
 
 ## Support
 
