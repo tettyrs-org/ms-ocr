@@ -154,10 +154,21 @@ Run tests:
 
 Part of the Tettyrs OCR ecosystem.
 
+## Known limitations
+
+Listed openly so they are not mistaken for solved problems:
+
+- **Failed jobs are retried up to 5 times** (`MAX_ATTEMPTS`), then moved to a dead-letter stream. Permanent engine errors are acknowledged without retry.
+- **Rules depend on the engine's `text` shape.** Extraction reads the `text` field line by line. A change in how `ocr-engine` joins words or lines can change extraction results. Use `words` and `bbox` where layout matters.
+- **New engine fields are ignored until mapped.** Quarkus ignores unknown JSON properties by default and no override is configured, so `bbox_original` from `ocr-engine` is not used yet.
+- **NIK is used only when it is strong.** The engine accepts a NIK when at least 5 votes agree and they make up at least 60%. Otherwise the NIK is left empty, and vision may fill it.
+
 ## Related Projects
 
-- [ocr-engine](https://github.com/tettyrs-org/ocr-engine) - Python OCR extraction service
+- [ocr-engine](https://github.com/tettyrs-org/ocr-engine) - Python OCR extraction service that this service calls
 - [ocr-api](https://github.com/tettyrs-org/ocr-api) - Public API and document lifecycle
+- `app/` - Flutter web app and Backend-for-Frontend (BFF). Kept in the local project folder, not a separate repository
+- [ocr-documents](https://github.com/tettyrs-org/ocr-documents) - Architecture, API specification, and deployment docs (private)
 
 ## Support
 
