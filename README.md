@@ -163,6 +163,17 @@ Listed openly so they are not mistaken for solved problems:
 - **New engine fields are ignored until mapped.** Quarkus ignores unknown JSON properties by default and no override is configured, so `bbox_original` from `ocr-engine` is not used yet.
 - **NIK is used only when it is strong.** The engine accepts a NIK when at least 5 votes agree and they make up at least 60%. Otherwise the NIK is left empty, and vision may fill it.
 
+## Tracing
+
+OpenTelemetry tracing is off by default. Enable it with:
+
+- `OCR_TRACES_EXPORTER=otlp` (default `none`)
+- `OCR_TRACES_ENDPOINT` (OTLP/HTTP endpoint, default `http://jaeger:4318/v1/traces`)
+- `OCR_SERVICE_NAME` (service name on traces)
+
+The trace context travels with each job in the Redis stream as a `traceparent` field. The consumer continues the trace in a child span named `process job`. Span attributes contain only the message id, never document content.
+
+
 ## Related Projects
 
 - [ocr-engine](https://github.com/tettyrs-org/ocr-engine) - Python OCR extraction service that this service calls

@@ -139,13 +139,16 @@ public class JobConsumer {
             return carrier == null ? null : carrier.get(key);
         }
     };
-    private static final Tracer TRACER = GlobalOpenTelemetry.getTracer("ms-ocr");
+    /** Tracer diambil saat dipakai, bukan saat kelas dimuat, supaya memakai SDK yang sudah dipasang saat startup. */
+    private static Tracer tracer() {
+        return GlobalOpenTelemetry.getTracer("ms-ocr");
+    }
 
     /** Satu job dalam satu span yang merupakan anak dari span api. Isi dokumen tidak masuk ke span. */
     void handle(StreamMessage<String, String, String> msg) {
         Context induk = GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
                 .extract(Context.root(), msg.payload(), GETTER);
-        Span span = TRACER.spanBuilder("process job").setParent(induk)
+        Span span = tracer().spanBuilder("process job").setParent(induk)
                 .setAttribute("messaging.message.id", msg.id()).startSpan();
         try (Scope ignored = span.makeCurrent()) {
             prosesJob(msg);
